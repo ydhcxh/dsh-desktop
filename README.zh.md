@@ -30,6 +30,31 @@ DeepSeek Harness 已经提供了完整的 agent 运行时与 Web UI。dsh-deskto
 - **Go 1.21+** —— 仅构建时需要
 - **WebView2 Runtime** —— Windows 10/11 一般已内置（Wails v3 使用纯 Go 加载器，**无需 gcc/CGO**）
 
+## 本地开发
+
+本地开发可直接从源码目录运行，无需完整打包。
+
+```powershell
+# 0. 拉取代码
+git clone https://github.com/ydhcxh/dsh-desktop.git
+cd dsh-desktop
+
+# 1. 安装 dsh 依赖到本地开发运行时（仅需一次）
+npm install --prefix .dsh-runtime @deepseek-ai/dsh@0.1.0-rc.6 --no-audit --no-fund
+
+# 2. 从源码目录编译并运行（也可用 `go run .`）
+go build -o dsh-desktop.exe .
+.\dsh-desktop.exe
+```
+
+此方式的运行时解析顺序：
+
+1. **Node** —— 先找 exe 同目录的 `runtime/node/node.exe`，找不到则用 `PATH` 中的 `node`。
+2. **dsh 入口** —— 先找 exe 同目录的 `runtime/node_modules/@deepseek-ai/dsh/lib/bin.js`，再找 exe 同目录的 `.dsh-runtime/node_modules/@deepseek-ai/dsh/lib/bin.js`。
+3. **回退** —— 若以上 dsh 入口都不存在，则执行 `npx -y @deepseek-ai/dsh web ...`（在线安装）。
+
+准备好 `.dsh-runtime/` 后，第 2 步即可完全离线、使用系统 Node 运行。如需可分发产物（内置 Node + 预装依赖），见[构建](#构建)。
+
 ## 构建
 
 ```powershell

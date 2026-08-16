@@ -30,6 +30,31 @@ DeepSeek Harness already provides a complete agent runtime and Web UI. dsh-deskt
 - **Go 1.21+** — build time only
 - **WebView2 Runtime** — preinstalled on Windows 10/11 (Wails v3 uses a pure-Go loader; **no gcc/CGO required**)
 
+## Development
+
+For local development, run the shell straight from the source tree — no full packaging required.
+
+```powershell
+# 0. Clone the repository
+git clone https://github.com/ydhcxh/dsh-desktop.git
+cd dsh-desktop
+
+# 1. Install dsh deps into the local dev runtime (once)
+npm install --prefix .dsh-runtime @deepseek-ai/dsh@0.1.0-rc.6 --no-audit --no-fund
+
+# 2. Build & run from the source tree (or use `go run .`)
+go build -o dsh-desktop.exe .
+.\dsh-desktop.exe
+```
+
+How the runtime is resolved when launched this way:
+
+1. **Node** — `runtime/node/node.exe` next to the exe, then `node` on `PATH`.
+2. **dsh entry** — `runtime/node_modules/@deepseek-ai/dsh/lib/bin.js` next to the exe, then `.dsh-runtime/node_modules/@deepseek-ai/dsh/lib/bin.js`.
+3. **Fallback** — if neither dsh entry exists, it runs `npx -y @deepseek-ai/dsh web ...` (online install).
+
+With `.dsh-runtime/` prepared, step 2 runs fully offline using your system Node. For a distributable bundle (bundled Node + pre-installed deps), see [Build](#build).
+
 ## Build
 
 ```powershell
