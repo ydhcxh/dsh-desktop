@@ -1,0 +1,114 @@
+# dsh-desktop
+
+A local-first desktop shell for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), built with **Go + Wails v3**.
+
+[简体中文文档](README.zh.md)
+
+## Why this project exists
+
+DeepSeek Harness already provides a complete agent runtime and Web UI. dsh-desktop does not reimplement Harness; it supplies the host capabilities needed for a desktop product:
+
+- Run without manually starting a CLI or managing local ports
+- Bundled Node.js runtime and pre-installed dsh dependencies — fully offline, no Node install required on the target machine
+- Application-owned launch directory keeps user data separate from the installation
+- Manages the Harness child process, readiness checks, logs, and shutdown in one place
+- Optional GitHub Releases version check
+
+## Features
+
+- Opens directly into Harness without a landing page
+- Listens on a **random `127.0.0.1` port** for each launch (or a fixed `--port`)
+- Starts Harness with the **bundled `node.exe`** and pre-installed `runtime/` — no network, no `npx` download
+- Reuses the **application-owned launch directory** (`%LOCALAPPDATA%\dsh-desktop\launch-root`)
+- Menu actions: restart the child process, view the log, check for updates, quit
+- Gracefully terminates the Harness child process on exit, with a Windows **Job Object** as a safety net (the whole child tree is reclaimed even on a force-kill)
+- GitHub Releases version check: on startup + every 6 hours + manual
+
+## Requirements
+
+- **Node.js + npm** — build time only (to install dsh deps and fetch the Node runtime)
+- **Go 1.21+** — build time only
+- **WebView2 Runtime** — preinstalled on Windows 10/11 (Wails v3 uses a pure-Go loader; **no gcc/CGO required**)
+
+## Build
+
+```powershell
+cd dsh-desktop
+.\build.ps1                             # install deps + compile + bundle node & dsh runtime
+.\build.ps1 -Version 1.2.3              # set the version
+.\build.ps1 -DshVersion 0.1.0-rc.6      # pin the dsh version
+.\build.ps1 -NodeVersion 24.16.0        # pin the bundled Node version
+.\build.ps1 -UpdateRepo "owner/repo"    # enable the GitHub Releases update check
+.\build.ps1 -SkipDsh                    # skip npm install (.dsh-runtime already present)
+```
+
+Artifacts:
+
+```
+bin/
+├── dsh-desktop.exe      # main binary (~12 MB)
+└── runtime/
+    ├── node/            # bundled Node runtime (node.exe, ~92 MB)
+    └── node_modules/    # pre-installed dsh dependencies (~250 MB)
+```
+
+## Run & distribute
+
+- Keep `dsh-desktop.exe` and `runtime/` in the **same directory**, then double-click `dsh-desktop.exe`. The target machine needs **no Node.js**.
+- On first launch, configure a DeepSeek API key in `Settings → Models` and pick a project directory with `Choose workspace`.
+- Ship `dsh-desktop.exe` together with `runtime/` (about 350 MB total; a zip or an installer).
+
+## Runtime architecture
+
+```
+dsh-desktop (Go + Wails v3)
+├── WebView2 window ── DeepSeek Harness Web UI
+│     └── http://127.0.0.1:<random-port>
+├── Harness child-process lifecycle (start / readiness / restart / shutdown)
+├── Windows Job Object — reclaims the whole child tree even on force-kill
+├── Application-owned launch directory
+└── Bundled runtime
+      ├── runtime/node/node.exe
+      └── runtime/node_modules/@deepseek-ai/dsh/...
+
+%LOCALAPPDATA%\dsh-desktop\
+├── launch-root/            # dsh working directory (profiles / sessions / plugins)
+└── logs/dsh-desktop.log    # runtime log
+```
+
+## Port configuration
+
+Default: a **random free port**. To pin it (highest priority first):
+
+1. CLI: `dsh-desktop.exe --port 3090`
+2. Env: `$env:DSH_PORT="3090"`
+
+## Version check
+
+- Source: **GitHub Releases** (`https://api.github.com/repos/{owner}/{repo}/releases/latest`)
+- Inject the repo at build time via `-UpdateRepo "owner/repo"`; leave it empty to disable
+- Cadence: once 15–30 s after startup, then every 6 hours, plus manual `Harness → Check for Updates…`
+- On a new version, a dialog offers a one-click "Open download page"
+
+## Data & logs
+
+- User data (profiles / sessions / plugins): `%LOCALAPPDATA%\dsh-desktop\launch-root\`
+- Runtime log: `%LOCALAPPDATA%\dsh-desktop\logs\dsh-desktop.log`
+- Menu `Harness → Restart Harness`: restart the dsh service
+- Menu `Harness → Open Log`: open the log in Notepad
+
+## Troubleshooting
+
+- Startup failed / timed out: check `%LOCALAPPDATA%\dsh-desktop\logs\dsh-desktop.log` (or menu `Harness → Open Log`)
+- Port conflict with a fixed port: use a different `--port`
+- Update dsh: change `-DshVersion` in `build.ps1`, delete `.dsh-runtime`, then rebuild
+- Update the bundled Node: change `-NodeVersion` in `build.ps1`, delete `bin\runtime\node`, then rebuild
+
+## Upstream version
+
+Pins `@deepseek-ai/dsh@0.1.0-rc.6`. DeepSeek Harness is in developer preview and evolves rapidly; expect compatibility-breaking changes.
+
+## License
+
+MIT (this project). DeepSeek Harness and its dependencies remain under their respective upstream licenses.
+
