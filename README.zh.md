@@ -3,7 +3,7 @@
 一个基于 **Go + Wails v3** 构建的 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 本地优先桌面外壳。
 
 [English](README.md)
-
+<img width="1264" height="781" alt="dsh-desktop-cove" src="https://github.com/user-attachments/assets/c5d608f5-3f20-42d9-9271-a0ed572660e3" />
 ## 为什么存在这个项目
 
 DeepSeek Harness 已经提供了完整的 agent 运行时与 Web UI。dsh-desktop 不重新实现 Harness，而是补齐一个桌面产品所需的宿主能力：
