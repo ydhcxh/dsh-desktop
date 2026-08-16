@@ -4,6 +4,8 @@ A local-first desktop shell for [DeepSeek Harness](https://github.com/deepseek-a
 
 [简体中文文档](README.zh.md)
 
+<img width="1264" height="781" alt="dsh-desktop-cove" src="https://github.com/user-attachments/assets/c5d608f5-3f20-42d9-9271-a0ed572660e3" />
+
 ## Why this project exists
 
 DeepSeek Harness already provides a complete agent runtime and Web UI. dsh-desktop does not reimplement Harness; it supplies the host capabilities needed for a desktop product:
