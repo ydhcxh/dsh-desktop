@@ -79,6 +79,34 @@ bin/
     └── node_modules/    # pre-installed dsh dependencies (~250 MB)
 ```
 
+### macOS
+
+> **Note:** `main.go` is currently Windows-specific (`syscall.SysProcAttr{HideWindow}`, the Windows Job Object, `node.exe`, `taskkill`/`notepad`), so a plain cross-compile will not work yet — make the platform-specific code portable first. The commands below show the intended macOS packaging layout.
+
+```bash
+cd dsh-desktop
+
+# 1. Install dsh deps (once)
+npm install --prefix .dsh-runtime @deepseek-ai/dsh@0.1.0-rc.6 --no-audit --no-fund
+
+# 2. Build for macOS (Apple Silicon; use GOARCH=amd64 for Intel)
+GOOS=darwin GOARCH=arm64 go build -trimpath \
+  -ldflags "-s -w -X main.version=1.2.3" \
+  -o bin/dsh-desktop .
+
+# 3. Bundle dsh deps
+mkdir -p bin/runtime
+cp -R .dsh-runtime/node_modules bin/runtime/node_modules
+
+# 4. Bundle the Node runtime (darwin build)
+mkdir -p bin/runtime/node
+curl -fsSL "https://npmmirror.com/mirrors/node/v24.16.0/node-v24.16.0-darwin-arm64.tar.gz" -o /tmp/node.tar.gz
+tar -xzf /tmp/node.tar.gz --strip-components=1 -C bin/runtime/node
+rm /tmp/node.tar.gz
+```
+
+Ship `bin/dsh-desktop` together with `bin/runtime/` (a `.app` bundle or a zip).
+
 ## Run & distribute
 
 - Keep `dsh-desktop.exe` and `runtime/` in the **same directory**, then double-click `dsh-desktop.exe`. The target machine needs **no Node.js**.

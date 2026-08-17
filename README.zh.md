@@ -77,6 +77,34 @@ bin/
     └── node_modules/    # 预装的 dsh 依赖（约 250 MB）
 ```
 
+### macOS
+
+> **说明：** 当前 `main.go` 为 Windows 专用（`syscall.SysProcAttr{HideWindow}`、Windows Job Object、`node.exe`、`taskkill`/`notepad`），直接交叉编译还无法通过——需先把平台相关代码改为可移植。以下命令展示 macOS 打包的预期方式。
+
+```bash
+cd dsh-desktop
+
+# 1. 安装 dsh 依赖（仅需一次）
+npm install --prefix .dsh-runtime @deepseek-ai/dsh@0.1.0-rc.6 --no-audit --no-fund
+
+# 2. 为 macOS 编译（Apple Silicon；Intel 用 GOARCH=amd64）
+GOOS=darwin GOARCH=arm64 go build -trimpath \
+  -ldflags "-s -w -X main.version=1.2.3" \
+  -o bin/dsh-desktop .
+
+# 3. 打包 dsh 依赖
+mkdir -p bin/runtime
+cp -R .dsh-runtime/node_modules bin/runtime/node_modules
+
+# 4. 打包 Node 运行时（darwin 版本）
+mkdir -p bin/runtime/node
+curl -fsSL "https://npmmirror.com/mirrors/node/v24.16.0/node-v24.16.0-darwin-arm64.tar.gz" -o /tmp/node.tar.gz
+tar -xzf /tmp/node.tar.gz --strip-components=1 -C bin/runtime/node
+rm /tmp/node.tar.gz
+```
+
+将 `bin/dsh-desktop` 与 `bin/runtime/` 一起分发（`.app` 或 zip）。
+
 ## 运行与分发
 
 - 将 `dsh-desktop.exe` 与 `runtime/` 放在**同一目录**，双击 `dsh-desktop.exe` 即可，**目标机器无需安装 Node.js**。
